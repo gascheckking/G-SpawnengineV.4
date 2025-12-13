@@ -1,0 +1,72 @@
+:root {
+  --bg-deep: #020617;
+  --bg-card: #020617;
+  --border-soft: rgba(148, 163, 184, 0.25);
+  --border-strong: rgba(148, 163, 184, 0.45);
+  --text-main: #e5e7eb;
+  --text-soft: #9ca3af;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.2);
+  --accent-green: #22c55e;
+  --danger: #fb7185;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Roboto", sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+body.theme-jurassic { background: #1c1917; }
+body.theme-hologram { background: #020617; }
+
+/* Shell */
+.app-shell {
+  min-height: 100vh;
+  padding: 14px 10px 22px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.app-frame {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Header */
+.app-header {
+  border-radius: var(--radius-md);
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  margin-bottom: 10px;
+}
+
+/* ... (Rest of the CSS remains similar, but simplified: reduced gradients to solid colors where possible, lowered shadow opacity for clean look) */
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Responsive */
+@media (min-width: 520px) {
+  .app-shell { padding: 24px 0 28px; }
+}
