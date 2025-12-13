@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>SpawnEngine · Mesh OS</title>
+  
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+
+  <style>
+    /* --- CSS VARIABLES (THEME) --- */
+    :root {
+        --bg-color: #050508;
+        --card-bg: rgba(22, 27, 34, 0.7);
+        --card-border: rgba(48, 54, 61, 0.6);
+        --text-main: #edf2f7;
+        --text-sub: #8b949e;
+        --accent-blue: #3b82f6;
+        --accent-green: #10b981;
+        --accent-purple: #8b5cf6;
+        --accent-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+        --nav-bg: rgba(13, 17, 23, 0.85);
+        --sidebar-width: 280px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    /* --- LAYOUT GRID (Responsive Platform) --- */
+    .platform-wrapper {
+        display: flex;
+        justify-content: center;
+        max-width: 1400px;
+        margin: 0 auto;
+        min-height: 100vh;
+    }
+
+    /* Sidebars (Hidden on Mobile) */
+    .sidebar {
+        display: none; /* Mobile default */
+        padding: 24px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+    }
+
+    .sidebar-left { width: var(--sidebar-width); border-right: 1px solid var(--card-border); }
+    .sidebar-right { width: 350px; border-left: 1px solid var(--card-border); }
+
+    /* Center App Shell */
+    .app-shell {
+        flex: 1;
+        max-width: 480px; /* Mobile app width */
+        width: 100%;
+        border-left: 1px solid transparent;
+        border-right: 1px solid transparent;
+        padding-bottom: 80px; /* Space for bottom nav */
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Desktop Adjustments */
+    @media (min-width: 1024px) {
+        .sidebar { display: block; }
+        .app-shell { 
+            max-width: 600px; 
+            border-color: var(--card-border);
+        }
+        .bottom-nav { display: none !important; } /* Hide bottom nav on desktop */
+    }
+
+    /* --- BACKGROUND MESH --- */
+    #mesh-bg {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+    }
+    #meshCanvas { display: block; width: 100%; height: 100%; }
+    .mesh-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, var(--bg-color) 80%);
+    }
+
+    /* --- COMPONENTS --- */
+    
+    /* Headers & Cards */
+    .mesh-header {
+        padding: 20px;
+        background: linear-gradient(180deg, rgba(13,17,23,0.9) 0%, rgba(13,17,23,0) 100%);
+    }
+    
+    .card-section {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 16px;
+        margin: 12px 16px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    /* Avatar Chip */
+    .avatar-chip {
+        display: flex; align-items: center; gap: 10px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--card-border);
+        padding: 6px 12px 6px 6px;
+        border-radius: 99px;
+        cursor: pointer; transition: 0.2s;
+    }
+    .avatar-chip:hover { background: rgba(255,255,255,0.1); }
+    .avatar-circle {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--accent-blue);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; color: white;
+    }
+    .avatar-meta { display: flex; flex-direction: column; }
+    .avatar-handle { font-size: 14px; font-weight: 600; line-height: 1; }
+    .avatar-sub { font-size: 11px; color: var(--text-sub); }
+
+    /* Icons Buttons */
+    .icon-button {
+        background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
+        width: 40px; height: 40px; border-radius: 10px;
+        color: var(--text-sub); cursor: pointer; transition: 0.2s;
+        display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .icon-button:hover { color: white; background: rgba(255,255,255,0.1); }
+
+    /* Typography */
+    .hud-title { font-size: 28px; font-weight: 800; margin: 0; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hud-subtitle { font-size: 13px; color: var(--text-sub); margin: 4px 0 0 0; }
+
+    /* Stats Pills */
+    .stats-row { display: flex; gap: 8px; margin-top: 16px; overflow-x: auto; padding-bottom: 4px; }
+    .stat-pill {
+        background: rgba(0,0,0,0.3); border: 1px solid var(--card-border);
+        padding: 4px 10px; border-radius: 8px;
+        display: flex; flex-direction: column; min-width: 80px;
+    }
+    .stat-label { font-size: 10px; text-transform: uppercase; color: var(--text-sub); font-weight: 600; letter-spacing: 0.5px; }
+    .stat-value { font-size: 13px; font-weight: 600; color: var(--accent-blue); font-family: 'Courier New', monospace; }
+
+    /* KPIs */
+    .header-kpis {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;
+    }
+    .kpi-card {
+        background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2);
+        padding: 12px; border-radius: 12px; position: relative; overflow: hidden;
+    }
+    .kpi-label { font-size: 11px; color: var(--accent-blue); font-weight: 700; text-transform: uppercase; }
+    .kpi-value { font-size: 24px; font-weight: 800; margin-top: 4px; }
+    .kpi-unit { font-size: 14px; font-weight: 500; opacity: 0.7; }
+
+    /* Streak Widget */
+    .streak-row { display: flex; align-items: center; gap: 16px; padding: 4px 0; }
+    .streak-wheel { width: 60px; height: 60px; position: relative; flex-shrink: 0; }
+    .streak-circle {
+        width: 100%; height: 100%; border-radius: 50%;
+        border: 3px solid var(--accent-green);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: rgba(16, 185, 129, 0.1);
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+    .streak-val { font-size: 18px; font-weight: 800; line-height: 1; color: white; }
+    .streak-lbl { font-size: 8px; font-weight: 700; color: var(--accent-green); letter-spacing: 1px; }
+    .streak-info { flex: 1; }
+    .streak-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+    .streak-sub { font-size: 12px; color: var(--text-sub); }
+    
+    .btn-checkin {
+        background: var(--accent-green); color: #000; border: none;
+        padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px;
+        cursor: pointer; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        transition: 0.2s;
+    }
+    .btn-checkin:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+    .btn-checkin:disabled { background: #2f363d; color: #8b949e; box-shadow: none; cursor: not-allowed; }
+
+    /* Nav Pills (Top Mesh Nav) */
+    .mesh-nav {
+        display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 12px 16px;
+        scrollbar-width: none;
+    }
+    .mesh-nav::-webkit-scrollbar { display: none; }
+    .nav-pill {
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        color: var(--text-sub); padding: 8px 16px; border-radius: 99px;
+        font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
+        display: flex; align-items: center; gap: 6px; transition: 0.2s;
+    }
+    .nav-pill:hover { color: white; border-color: white; }
+    .nav-pill.active {
+        background: var(--accent-blue); color: white; border-color: var(--accent-blue);
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    /* List Items (Feed/Market) */
+    .list-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        cursor: pointer;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .list-icon { 
+        width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.05);
+        display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 12px;
+    }
+    .list-content { flex: 1; }
+    .list-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .list-meta { font-size: 11px; color: var(--text-sub); }
+    .list-action { 
+        font-size: 12px; font-weight: 600; color: var(--accent-blue);
+        background: rgba(59, 130, 246, 0.1); padding: 4px 10px; border-radius: 6px;
+    }
+
+    /* Bottom Nav (Mobile) */
+    .bottom-nav {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        height: 64px; background: rgba(13, 17, 23, 0.95);
+        backdrop-filter: blur(12px); border-top: 1px solid var(--card-border);
+        display: flex; justify-content: space-around; align-items: center;
+        z-index: 100;
+    }
+    .nav-btn {
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        background: none; border: none; color: #6e7681; cursor: pointer;
+        font-size: 10px; font-weight: 500; width: 60px;
+    }
+    .nav-btn i { font-size: 24px; transition: 0.2s; }
+    .nav-btn.active { color: var(--accent-blue); }
+    .nav-btn.active i { transform: translateY(-2px); text-shadow: 0 0 10px rgba(59, 130, 246, 0.6); }
+
+    /* Sidebar Styles (Desktop) */
+    .desktop-nav-link {
+        display: flex; align-items: center; gap: 12px; padding: 12px;
+        color: var(--text-sub); text-decoration: none; border-radius: 8px;
+        margin-bottom: 4px; transition: 0.2s; font-weight: 500;
+    }
+    .desktop-nav-link:hover { background: rgba(255,255,255,0.05); color: white; }
+    .desktop-nav-link.active { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); font-weight: 600; }
+    .desktop-nav-link i { font-size: 20px; }
+
+    /* Settings Modal */
+    .sheet-backdrop {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+        z-index: 200; opacity: 0; pointer-events: none; transition: 0.3s;
+        display: flex; align-items: flex-end; justify-content: center;
+    }
+    .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+    .sheet {
+        background: #161b22; width: 100%; max-width: 500px;
+        border-radius: 20px 20px 0 0; padding: 20px;
+        transform: translateY(100%); transition: 0.3s;
+        max-height: 85vh; overflow-y: auto; border: 1px solid var(--card-border);
+    }
+    .sheet-backdrop.open .sheet { transform: translateY(0); }
+    @media (min-width: 768px) {
+        .sheet-backdrop { align-items: center; }
+        .sheet { border-radius: 20px; }
+    }
+
+    /* Utilities */
+    .hidden { display: none; }
+    .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid; margin-right: 6px; }
+    .tag-green { border-color: rgba(16, 185, 129, 0.3); color: var(--accent-green); background: rgba(16, 185, 129, 0.1); }
+    .tag-purple { border-color: rgba(139, 92, 246, 0.3); color: var(--accent-purple); background: rgba(139, 92, 246, 0.1); }
+
+  </style>
+</head>
+<body>
+
+  <!-- BACKGROUND MESH -->
+  <div id="mesh-bg"><canvas id="meshCanvas"></canvas><div class="mesh-overlay"></div></div>
+
+  <div class="platform-wrapper">
+    
+    <!-- LEFT SIDEBAR (Desktop) -->
+    <aside class="sidebar sidebar-left">
+        <div style="margin-bottom: 30px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; background: var(--accent-blue); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <i class="ph-fill ph-cube" style="font-size: 20px; color: white;"></i>
+            </div>
+            <div>
+                <div style="font-weight: 700; font-size: 18px;">SpawnEngine</div>
+                <div style="font-size: 11px; color: var(--text-sub);">Mesh v0.3</div>
+            </div>
+        </div>
+
+        <nav>
+            <a href="#" class="desktop-nav-link active" onclick="switchTab('home')"><i class="ph ph-house"></i> Home</a>
+            <a href="#" class="desktop-nav-link" onclick="switchTab('loot')"><i class="ph ph-gift"></i> Loot & Packs</a>
+            <a href="#" class="desktop-nav-link" onclick="switchTab('market')"><i class="ph ph-shopping-bag"></i> Market</a>
+            <a href="#" class="desktop-nav-link" onclick="switchTab('mesh')"><i class="ph ph-graph"></i> Mesh Graph</a>
+            <a href="#" class="desktop-nav-link" onclick="switchTab('supcast')"><i class="ph ph-broadcast"></i> SupCast</a>
+        </nav>
+
+        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--card-border);">
+            <div class="desktop-nav-link" onclick="openSettings()">
+                <i class="ph ph-gear"></i> Settings
+            </div>
+        </div>
+    </aside>
+
+    <!-- CENTER APP SHELL -->
+    <div class="app-shell" id="app-container">
+        
+        <!-- HEADER (Mobile/Tablet) -->
+        <header class="mesh-header">
+            <div class="mesh-header-top">
+                <div class="avatar-chip" onclick="openSettings()">
+                    <div class="avatar-circle">S</div>
+                    <div class="avatar-meta">
+                        <div class="avatar-handle">@spawniz</div>
+                        <div class="avatar-sub">Mesh ID · Creator</div>
+                    </div>
+                </div>
+                <button class="icon-button" onclick="openSettings()">
+                    <i class="ph ph-gear"></i>
+                </button>
+            </div>
+
+            <div class="hud-title-block">
+                <h1 class="hud-title">SpawnEngine</h1>
+                <p class="hud-subtitle">Modular onchain mesh for creators.</p>
+            </div>
+
+            <!-- Stats Pills -->
+            <div class="stats-row">
+                <div class="stat-pill">
+                    <span class="stat-label">Gas</span>
+                    <span class="stat-value">0.20 gwei</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-label">Mode</span>
+                    <span class="stat-value">Single Mesh</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-label">Wallets</span>
+                    <span class="stat-value">1 Active</span>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="header-kpis">
+                <div class="kpi-card">
+                    <div class="kpi-label">XP Balance</div>
+                    <div class="kpi-value" id="xpVal">1,575</div>
+                    <div class="kpi-unit">XP</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Spawn Token</div>
+                    <div class="kpi-value">497</div>
+                    <div class="kpi-unit">SPN</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- TOP MESH NAV (Scrollable) -->
+        <nav class="mesh-nav" id="topNav">
+            <button class="nav-pill active" onclick="switchTab('home')"><i class="ph-fill ph-house"></i> Overview</button>
+            <button class="nav-pill" onclick="switchTab('loot')"><i class="ph-fill ph-gift"></i> Packs</button>
+            <button class="nav-pill" onclick="switchTab('market')"><i class="ph-fill ph-shopping-bag"></i> Market</button>
+            <button class="nav-pill" onclick="switchTab('mesh')"><i class="ph-fill ph-graph"></i> Mesh</button>
+            <button class="nav-pill" onclick="switchTab('supcast')"><i class="ph-fill ph-broadcast"></i> SupCast</button>
+        </nav>
+
+        <!-- TAB CONTENT -->
+        <main class="content-area">
+            
+            <!-- HOME VIEW -->
+            <div id="tab-home" class="tab-view">
+                <!-- Streak Card -->
+                <section class="card-section">
+                    <div class="streak-row">
+                        <div class="streak-wheel">
+                            <div class="streak-circle">
+                                <span class="streak-lbl">DAY</span>
+                                <span class="streak-val" id="streakDay">1</span>
+                            </div>
+                        </div>
+                        <div class="streak-info">
+                            <div class="streak-title">Daily Ritual</div>
+                            <div class="streak-sub">Keep the streak for <span style="color:white; font-weight:600;">6 more days</span>.</div>
+                        </div>
+                        <button class="btn-checkin" id="btnCheckin" onclick="checkIn()">Check-in</button>
+                    </div>
+                </section>
+
+                <!-- Activity Feed -->
+                <section class="card-section">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                        <h3 style="font-size:16px; font-weight:700; margin:0;">Mesh Feed</h3>
+                        <span class="tag tag-green">Live</span>
+                    </div>
+                    
+                    <div id="feedList">
+                        <!-- Feed Items (Mock) -->
+                        <div class="list-item">
+                            <div class="list-icon" style="color: var(--accent-purple);"><i class="ph-fill ph-sparkle"></i></div>
+                            <div class="list-content">
+                                <div class="list-title">0x99...a2 minted Base Alpha</div>
+                                <div class="list-meta">2 mins ago · +250 XP</div>
+                            </div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-icon" style="color: var(--accent-green);"><i class="ph-fill ph-package"></i></div>
+                            <div class="list-content">
+                                <div class="list-title">Spawniz opened Vibe Pack S1</div>
+                                <div class="list-meta">15 mins ago · Common Pull</div>
+                            </div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-icon" style="color: var(--accent-blue);"><i class="ph-fill ph-swap"></i></div>
+                            <div class="list-content">
+                                <div class="list-title">Swapped 0.05 ETH for SPN</div>
+                                <div class="list-meta">1 hr ago · Uniswap</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- MARKET VIEW -->
+            <div id="tab-market" class="tab-view hidden">
+                <section class="card-section">
+                    <h2 style="font-size:20px; font-weight:800; margin-bottom:16px;">Spawn Market</h2>
+                    <div class="list-item">
+                        <div class="list-icon" style="background:rgba(16,185,129,0.1); color:var(--accent-green);"><i class="ph-fill ph-scroll"></i></div>
+                        <div class="list-content">
+                            <div class="list-title">Smart Contract Audit</div>
+                            <div class="list-meta">Service · 0.5 ETH</div>
+                        </div>
+                        <div class="list-action">VIEW</div>
+                    </div>
+                    <div class="list-item">
+                        <div class="list-icon" style="background:rgba(59,130,246,0.1); color:var(--accent-blue);"><i class="ph-fill ph-rocket"></i></div>
+                        <div class="list-content">
+                            <div class="list-title">Token Launch Bundle</div>
+                            <div class="list-meta">Utility · 0.21 ETH</div>
+                        </div>
+                        <div class="list-action">VIEW</div>
+                    </div>
+                    <div class="list-item">
+                        <div class="list-icon" style="background:rgba(239,68,68,0.1); color:#ef4444;"><i class="ph-fill ph-student"></i></div>
+                        <div class="list-content">
+                            <div class="list-title">Onchain Education</div>
+                            <div class="list-meta">Course · 0.08 ETH</div>
+                        </div>
+                        <div class="list-action">VIEW</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- LOOT VIEW -->
+            <div id="tab-loot" class="tab-view hidden">
+                <section class="card-section" style="text-align:center; padding:40px 20px;">
+                    <i class="ph-duotone ph-package" style="font-size:48px; color:var(--accent-purple); margin-bottom:16px;"></i>
+                    <h3>Loot & Packs</h3>
+                    <p class="card-sub">Your inventory is empty. Buy packs on the market.</p>
+                    <button class="btn-checkin" style="background:var(--accent-purple); color:white;" onclick="switchTab('market')">Go to Market</button>
+                </section>
+            </div>
+
+            <!-- MESH VIEW -->
+            <div id="tab-mesh" class="tab-view hidden">
+                <section class="card-section">
+                    <h3>Mesh Graph</h3>
+                    <p class="card-sub">Visualizing 1 active wallet node.</p>
+                    <div style="height:200px; background:rgba(0,0,0,0.3); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--text-sub); font-size:12px;">
+                        [ WebGL Mesh Visualization Mock ]
+                    </div>
+                </section>
+            </div>
+
+            <!-- SUPCAST VIEW -->
+            <div id="tab-supcast" class="tab-view hidden">
+                <section class="card-section">
+                    <h3>SupCast Support</h3>
+                    <div class="list-item">
+                        <div class="list-content">
+                            <div class="list-title">Ticket #1042: Gas stuck?</div>
+                            <div class="list-meta">Pending · 3 replies</div>
+                        </div>
+                        <div class="tag tag-purple">OPEN</div>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- RIGHT SIDEBAR (Desktop Widgets) -->
+    <aside class="sidebar sidebar-right">
+        <h3 style="font-size:14px; color:var(--text-sub); text-transform:uppercase; font-weight:700; margin-bottom:16px;">Quest Layer</h3>
+        
+        <div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:16px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                <span style="font-weight:600; font-size:14px;">Mint Zora Alpha</span>
+                <span style="color:var(--accent-blue); font-weight:700; font-size:12px;">+250 XP</span>
+            </div>
+            <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:4px;">
+                <div style="width:60%; height:100%; background:var(--accent-blue); border-radius:4px;"></div>
+            </div>
+        </div>
+
+        <h3 style="font-size:14px; color:var(--text-sub); text-transform:uppercase; font-weight:700; margin-bottom:16px;">Trending</h3>
+        <div class="list-item">
+            <div class="list-icon">🔥</div>
+            <div class="list-content">
+                <div class="list-title">Base NFT Drop</div>
+                <div class="list-meta">145 minting now</div>
+            </div>
+        </div>
+        <div class="list-item">
+            <div class="list-icon">⚔️</div>
+            <div class="list-content">
+                <div class="list-title">Quest Bundle</div>
+                <div class="list-meta">320 joined</div>
+            </div>
+        </div>
+    </aside>
+
+  </div>
+
+  <!-- BOTTOM NAV (Mobile) -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('home')" data-target="home"><i class="ph-fill ph-house"></i><span>Home</span></button>
+    <button class="nav-btn" onclick="switchTab('loot')" data-target="loot"><i class="ph-fill ph-gift"></i><span>Loot</span></button>
+    <button class="nav-btn" onclick="switchTab('market')" data-target="market"><i class="ph-fill ph-shopping-bag"></i><span>Market</span></button>
+    <button class="nav-btn" onclick="switchTab('mesh')" data-target="mesh"><i class="ph-fill ph-graph"></i><span>Mesh</span></button>
+    <button class="nav-btn" onclick="switchTab('supcast')" data-target="supcast"><i class="ph-fill ph-broadcast"></i><span>SupCast</span></button>
+  </nav>
+
+  <!-- SETTINGS MODAL -->
+  <div class="sheet-backdrop" id="settingsSheet">
+    <div class="sheet">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="font-size:20px; font-weight:800; margin:0;">Settings</h2>
+            <button onclick="closeSettings()" style="background:none; border:none; color:var(--text-sub); font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        
+        <div style="margin-bottom:24px;">
+            <h4 style="color:var(--text-sub); font-size:12px; text-transform:uppercase; font-weight:700; margin-bottom:12px;">Account</h4>
+            <div style="display:flex; justify-content:space-between; padding:12px; background:rgba(255,255,255,0.05); border-radius:12px;">
+                <div>
+                    <div style="font-weight:700;">@spawniz</div>
+                    <div style="font-size:12px; color:var(--text-sub);">Creator ID</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-family:monospace; font-size:13px;">0x...8a2B</div>
+                    <div style="font-size:11px; color:var(--accent-green);">Connected</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h4 style="color:var(--text-sub); font-size:12px; text-transform:uppercase; font-weight:700; margin-bottom:12px;">App Role</h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <div style="padding:12px; border:1px solid var(--accent-blue); background:rgba(59,130,246,0.1); border-radius:8px; cursor:pointer;">
+                    <div style="font-size:13px; font-weight:700;">🎨 Creator</div>
+                </div>
+                <div style="padding:12px; border:1px solid var(--card-border); background:rgba(255,255,255,0.03); border-radius:8px; cursor:pointer; opacity:0.6;">
+                    <div style="font-size:13px; font-weight:700;">⚡ Hunter</div>
+                </div>
+            </div>
+        </div>
+        
+        <button onclick="closeSettings()" style="width:100%; padding:14px; background:var(--accent-blue); color:white; border:none; border-radius:12px; font-weight:700; margin-top:30px; cursor:pointer;">Save Changes</button>
+    </div>
+  </div>
+
+  <script>
+    // --- APP STATE ---
+    let xp = 1575;
+    let day = 1;
+
+    // --- NAVIGATION ---
+    function switchTab(tabId) {
+        // 1. Hide all views
+        document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+        // 2. Show target view
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+        
+        // 3. Update Bottom Nav (Mobile)
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if(btn.dataset.target === tabId) btn.classList.add('active');
+        });
+
+        // 4. Update Top Nav (Desktop/In-App)
+        document.querySelectorAll('.nav-pill').forEach(pill => {
+            pill.classList.remove('active');
+            // Simplified check based on onclick matching
+            if(pill.getAttribute('onclick').includes(tabId)) pill.classList.add('active');
+        });
+
+        // 5. Update Sidebar Nav (Desktop)
+        document.querySelectorAll('.desktop-nav-link').forEach(link => {
+            link.classList.remove('active');
+            if(link.getAttribute('onclick').includes(tabId)) link.classList.add('active');
+        });
+    }
+
+    // --- ACTIONS ---
+    function checkIn() {
+        const btn = document.getElementById('btnCheckin');
+        if(btn.disabled) return;
+        
+        // Animation Mock
+        btn.innerText = "Claiming...";
+        setTimeout(() => {
+            xp += 100;
+            day += 1;
+            document.getElementById('xpVal').innerText = xp.toLocaleString();
+            document.getElementById('streakDay').innerText = day;
+            btn.innerText = "Claimed!";
+            btn.style.background = "#2f363d";
+            btn.style.color = "#8b949e";
+            btn.style.boxShadow = "none";
+            btn.disabled = true;
+        }, 800);
+    }
+
+    // --- SETTINGS MODAL ---
+    function openSettings() {
+        document.getElementById('settingsSheet').classList.add('open');
+    }
+    function closeSettings() {
+        document.getElementById('settingsSheet').classList.remove('open');
+    }
+
+    // --- BACKGROUND MESH ANIMATION ---
+    const canvas = document.getElementById('meshCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let nodes = [];
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Create Nodes
+    for(let i=0; i<35; i++) {
+        nodes.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.15)";
+        ctx.lineWidth = 1;
+
+        // Draw connections
+        for(let i=0; i<nodes.length; i++) {
+            let node = nodes[i];
+            
+            // Move
+            node.x += node.vx;
+            node.y += node.vy;
+            
+            // Bounce
+            if(node.x < 0 || node.x > width) node.vx *= -1;
+            if(node.y < 0 || node.y > height) node.vy *= -1;
+
+            // Draw Dot
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 2, 0, Math.PI*2);
+            ctx.fillStyle = "rgba(59, 130, 246, 0.5)";
+            ctx.fill();
+
+            // Connect
+            for(let j=i+1; j<nodes.length; j++) {
+                let node2 = nodes[j];
+                let dist = Math.hypot(node.x - node2.x, node.y - node2.y);
+                if(dist < 150) {
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node2.x, node2.y);
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+  </script>
+</body>
+</html>
