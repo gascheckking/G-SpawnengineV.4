@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y-Platform HUD - SpawnEngine Roadmap</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom styles to match the dark/neon aesthetic */
+        :root {
+            --color-bg: #0c0817; /* Darker background */
+            --color-card: #1c1432;
+            --color-accent-pink: #ff66aa;
+            --color-accent-teal: #00e0a0;
+            --color-text-dim: #9ca3af;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #ffffff;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Subtle Dot Grid Background Pattern */
+        .bg-dot-grid {
+            background-image: radial-gradient(var(--color-accent-pink) 0.5px, transparent 0.5px);
+            background-size: 15px 15px;
+            opacity: 0.05;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Custom gradient button */
+        .btn-gradient {
+            background: linear-gradient(90deg, #ff66aa, #bb66ff);
+            transition: all 0.2s ease;
+        }
+        .btn-gradient:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 15px rgba(255, 102, 170, 0.4);
+        }
+        /* AI Button Gradient (Teal/Pink) */
+        .btn-ai-gradient {
+            background: linear-gradient(90deg, var(--color-accent-teal), var(--color-accent-pink));
+            transition: all 0.2s ease;
+        }
+        .btn-ai-gradient:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 15px rgba(0, 224, 160, 0.4);
+        }
+
+        /* HUD/Platform elements - Mesh Glow */
+        .bg-mesh-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1; /* Layer 1 */
+            opacity: 0.3;
+        }
+        .bg-mesh-glow::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: var(--color-accent-pink);
+            border-radius: 50%;
+            filter: blur(120px);
+            animation: glow-pink 10s infinite alternate;
+        }
+        .bg-mesh-glow::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: var(--color-accent-teal);
+            border-radius: 50%;
+            filter: blur(120px);
+            animation: glow-teal 12s infinite alternate-reverse;
+        }
+        @keyframes glow-pink {
+            from { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            to { transform: translate(10vw, 5vh) scale(1.1); opacity: 0.5; }
+        }
+        @keyframes glow-teal {
+            from { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            to { transform: translate(-10vw, -5vh) scale(1.1); opacity: 0.5; }
+        }
+
+
+        /* Hide scrollbar but allow scroll */
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Customize navbar buttons */
+        .nav-btn.active {
+            box-shadow: 0 0 10px var(--color-accent-pink);
+            background-color: var(--color-accent-pink);
+            color: white;
+        }
+
+        /* STATS HUD CARD - MAX COMPACTNESS */
+        .stat-card-compact {
+            background-color: #1f293722; 
+            border: 1px solid #37415144; 
+            border-radius: 0.5rem; 
+            padding: 0.5rem; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .stat-card-compact .title {
+            font-size: 0.6rem; 
+            font-weight: 700; 
+            color: #9ca3af; 
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            line-height: 1;
+            margin-bottom: 0.1rem;
+        }
+        .stat-card-compact .value {
+            font-size: 1rem; 
+            font-weight: 800; 
+            line-height: 1.2;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .stat-card-compact .unit {
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            opacity: 0.7;
+            margin-left: 0.1rem;
+        }
+
+        /* Roadmap timeline style */
+        .roadmap-phase {
+            border-left: 3px solid var(--color-accent-pink);
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .roadmap-phase::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 0;
+            width: 16px;
+            height: 16px;
+            background: var(--color-accent-pink);
+            border-radius: 50%;
+            border: 3px solid var(--color-bg);
+            box-shadow: 0 0 0 4px var(--color-bg);
+        }
+        .roadmap-phase.current::before {
+            background: var(--color-accent-teal);
+            border-color: var(--color-bg);
+            box-shadow: 0 0 0 4px var(--color-bg), 0 0 10px var(--color-accent-teal);
+        }
+        .roadmap-phase.current {
+            border-color: var(--color-accent-teal);
+        }
+        
+        /* Input/Textarea styling for the Factory */
+        .ai-input {
+            background-color: #1a1331;
+            border: 1px solid #5a4b7b;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            resize: none;
+            transition: border-color 0.2s;
+        }
+        .ai-input:focus {
+            outline: none;
+            border-color: var(--color-accent-teal);
+            box-shadow: 0 0 0 2px rgba(0, 224, 160, 0.3);
+        }
+        
+        /* Container for Desktop View (Optional, but good for larger screens) */
+        @media (min-width: 1024px) {
+            .main-content-wrapper {
+                max-width: 1024px;
+                margin: 0 auto;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+            .content-area-padding {
+                padding: 1rem 1.5rem 0 1.5rem;
+            }
+        }
+        
+        /* Loading spinner for AI Factory */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid var(--color-accent-teal);
+            border-radius: 50%;
+            width: 1.5rem;
+            height: 1.5rem;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Background dot pattern (Z-index 0) -->
+    <div class="bg-dot-grid"></div>
+
+    <!-- Background glow effect (Z-index 1) -->
+    <div class="bg-mesh-glow"></div>
+
+    <!-- Main Container (Z-index 10) -->
+    <div class="relative z-10 flex flex-col flex-grow main-content-wrapper">
+
+        <!-- Top HUD (Header) - Compact menu button -->
+        <header class="p-3 flex justify-between items-center border-b border-gray-700/50 bg-gray-900/70 backdrop-blur-sm sticky top-0 z-20">
+            <div class="flex items-center space-x-2">
+                <div class="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-purple-600/30">
+                    SE
+                </div>
+                <div>
+                    <p class="text-sm font-semibold leading-tight">SpawnEngine</p>
+                    <p class="text-[0.6rem] text-gray-400 leading-tight">Modular Onchain Mesh</p>
+                </div>
+            </div>
+            <button id="connect-wallet-btn" class="px-3 py-1.5 text-white font-bold rounded-lg text-xs btn-gradient shadow-md shadow-pink-500/50">
+                Connect Wallet
+            </button>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="content-area" class="p-4 flex-grow custom-scrollbar content-area-padding">
+            <!-- Content for the active tab will load here -->
+        </main>
+
+        <!-- Modal (Fly-out Menu) -->
+        <div id="modal-menu" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-lg hidden justify-end transition-opacity duration-300 opacity-0">
+            <div class="w-full h-full p-6 bg-[#1a1331] shadow-2xl shadow-purple-500/50 max-w-sm ml-auto flex flex-col">
+                <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-lg font-bold text-white">
+                            SE
+                        </div>
+                        <p class="text-lg font-bold text-white">SpawnEngine</p>
+                    </div>
+                    <button id="close-modal-btn" class="p-2 text-white hover:text-gray-400 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <div class="space-y-3 flex-grow">
+                    <!-- Updated Modal Nav Items (to include all main tabs) -->
+                    <a href="#" data-tab="Home" class="modal-nav-btn block py-3 px-2 text-white text-md font-medium rounded-lg hover:bg-purple-700/50 transition duration-150 flex items-center space-x-2">
+                        <span data-lucide="home" class="w-5 h-5"></span> <span>HUD Dashboard</span>
+                    </a>
+                    <a href="#" data-tab="Factory" class="modal-nav-btn block py-3 px-2 text-white text-md font-medium rounded-lg hover:bg-purple-700/50 transition duration-150 flex items-center space-x-2">
+                        <span data-lucide="sigma" class="w-5 h-5"></span> <span>AI Contract Factory</span>
+                    </a>
+                    <a href="#" data-tab="Bot" class="modal-nav-btn block py-3 px-2 text-white text-md font-medium rounded-lg hover:bg-purple-700/50 transition duration-150 flex items-center space-x-2">
+                        <span data-lucide="cpu" class="w-5 h-5"></span> <span>Spawn Bot (Automation)</span>
+                    </a>
+                    <a href="#" data-tab="Roadmap" class="modal-nav-btn block py-3 px-2 text-white text-md font-medium rounded-lg hover:bg-purple-700/50 transition duration-150 flex items-center space-x-2">
+                        <span data-lucide="map" class="w-5 h-5"></span> <span>Roadmap 2025</span>
+                    </a>
+                    <div class="h-px bg-gray-700 my-2"></div>
+                    <a href="#" class="block py-3 px-2 text-white text-md font-medium rounded-lg hover:bg-purple-700/50 transition duration-150 flex items-center space-x-2">
+                        <span data-lucide="settings" class="w-5 h-5"></span> <span>Settings & API</span>
+                    </a>
+                    <a href="#" class="block py-3 px-2 text-white text-md font-medium rounded-lg hover:bg-purple-700/50 transition duration-150 flex items-center space-x-2">
+                        <span data-lucide="bar-chart" class="w-5 h-5"></span> <span>Leaderboard</span>
+                    </a>
+                </div>
+
+                <div class="mt-8 pt-4 border-t border-gray-700">
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-3">Account & Security</p>
+                    <button class="w-full text-left py-3 px-2 text-lg font-medium rounded-lg bg-red-600/30 text-red-300 hover:bg-red-600/50 transition duration-150 flex items-center space-x-3">
+                        <span data-lucide="log-out" class="w-5 h-5"></span>
+                        <span>Log Out / Disconnect</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation (Footer/Nav) - Now with 7 tabs -->
+        <!-- Hidden on large screens (lg:) to promote desktop navigation -->
+        <nav class="sticky bottom-0 z-30 bg-gray-900/90 backdrop-blur-md p-3 border-t border-gray-800 shadow-2xl shadow-black/50 lg:hidden">
+            <div class="flex justify-around">
+                <button data-tab="Home" class="nav-btn active flex-1 mx-1 py-2 rounded-xl text-xs font-semibold flex flex-col items-center text-white transition-all duration-200">
+                    <span data-lucide="home" class="w-5 h-5 mb-0.5"></span>
+                    HUD
+                </button>
+                <button data-tab="Loot" class="nav-btn flex-1 mx-1 py-2 rounded-xl text-xs font-semibold flex flex-col items-center text-gray-400 hover:text-white transition-all duration-200">
+                    <span data-lucide="package" class="w-5 h-5 mb-0.5"></span>
+                    Packs
+                </button>
+                <button data-tab="Quests" class="nav-btn flex-1 mx-1 py-2 rounded-xl text-xs font-semibold flex flex-col items-center text-gray-400 hover:text-white transition-all duration-200">
+                    <span data-lucide="sword" class="w-5 h-5 mb-0.5"></span>
+                    Quests
+                </button>
+                 <button data-tab="Bot" class="nav-btn flex-1 mx-1 py-2 rounded-xl text-xs font-semibold flex flex-col items-center text-gray-400 hover:text-white transition-all duration-200">
+                    <span data-lucide="cpu" class="w-5 h-5 mb-0.5"></span>
+                    Bot
+                </button>
+                <button data-tab="Factory" class="nav-btn flex-1 mx-1 py-2 rounded-xl text-xs font-semibold flex flex-col items-center text-gray-400 hover:text-white transition-all duration-200">
+                    <span data-lucide="sigma" class="w-5 h-5 mb-0.5"></span>
+                    Factory
+                </button>
+                <button data-tab="Mesh" class="nav-btn flex-1 mx-1 py-2 rounded-xl text-xs font-semibold flex flex-col items-center text-gray-400 hover:text-white transition-all duration-200">
+                    <span data-lucide="git-branch" class="w-5 h-5 mb-0.5"></span>
+                    Mesh
+                </button>
+                <button data-tab="Roadmap" class="nav-btn flex-1 mx-1 py-2 rounded-xl text-xs font-semibold flex flex-col items-center text-gray-400 hover:text-white transition-all duration-200">
+                    <span data-lucide="map" class="w-5 h-5 mb-0.5"></span>
+                    Roadmap
+                </button>
+            </div>
+        </nav>
+
+    </div>
+
+    <script>
+        // Main data and state (Translated to English)
+        const mockStats = {
+            xpBalance: 1575,
+            spawnToken: 497,
+            dailyStreak: 1,
+            gasEst: '0.21 gwei',
+            meshStatus: 'Active', 
+            nodes: 10,
+            xpStreams: 20,
+            activeWallets: 1,
+            syncStatus: 'Local Mock', 
+            lastSync: '12:45 UTC',
+            latency: '45ms',
+            txPending: 3,
+            bridgeAssets: 5, // New stat
+        };
+
+        const quests = [
+            { text: "Cast once on Farcaster", xp: 25, status: "Complete", color: "text-green-400" }, 
+            { text: "Buy a creator coin on Base", xp: 40, status: "Bonus", color: "text-yellow-400" },
+            { text: "Open a pack in Zora", xp: 60, status: "Locked (Demo)", color: "text-red-400" }, 
+            { text: "Refer a new creator", xp: 100, status: "Complete", color: "text-green-400" }, 
+        ];
+
+        // Roadmap phases (Translated to English)
+        const roadmapPhases = [
+            { 
+                phase: "PHASE 1", 
+                version: "Mesh HUD (Current)", 
+                goal: "Deliver the most premium, compact onchain dashboard on Base.", 
+                icon: "gauge", 
+                isCurrent: true, 
+                features: [
+                    "Dashboard Mesh HUD v0.2: XP, creator tokens, streaks, mesh load, quests.",
+                    "Daily Streak Engine: Micro-ritual system rewarding daily activity.",
+                    "Creator Token Awareness: Reads mints, buys, sells, claims, burns, swaps.",
+                    "Pull Lab Prototype: Early version of entropy testing & reward algorithms.",
+                ]
+            },
+            { 
+                phase: "PHASE 2", 
+                version: "Creator Token Mesh (v0.5)", 
+                goal: "Merge all creator token ecosystems into one activity feed.", 
+                icon: "activity", 
+                isCurrent: false, 
+                features: [
+                    "Unified coin actions from Zora / Frames / Vibe / any ERC20.",
+                    "Hybrid schema: creator tokens → mesh nodes, packs → entropy triggers.",
+                    "Real-time feed for token buys, mints, sells, burns, swaps."
+                ]
+            },
+            { 
+                phase: "PHASE 3", 
+                version: "Pack Protocol (v1.0)", 
+                goal: "Deploy production-ready pack contracts under SpawnEngine Factory.", 
+                icon: "box", 
+                isCurrent: false, 
+                features: [
+                    "PackFactory.sol: Contract to create unlimited pack series.",
+                    "TokenPackSeries.sol: Card/pull logic, payouts, reserve checks.",
+                    "Pull modules: Fragments → fuse → Shards → gamble → Relics → unlock → Mythics."
+                ]
+            },
+            { 
+                phase: "PHASE 4", 
+                version: "The Spawn Bot (v1.5)", 
+                goal: "Intelligent onchain automations linked to the mesh.", 
+                icon: "cpu", 
+                isCurrent: false, 
+                features: [
+                    "Auto-open packs based on entropy (Pull Lab intelligence).",
+                    "Auto-stake coins when streak is active.",
+                    "Auto-bridge, Auto-group wallets, Auto-claim quest rewards."
+                ]
+            },
+            { 
+                phase: "PHASE 5", 
+                version: "Mesh Explorer (v2.0)", 
+                goal: "A full social map of the creator economy and multi-chain assets.", 
+                icon: "map-pin", 
+                isCurrent: false, 
+                features: [
+                    "BubbleMap v2: Interactive wallet flows.",
+                    "Onchain heatmaps for XP flow, pack migration, token buying streaks.",
+                    "Cross-Chain Bridge Aggregator: Best price/speed for tokens (ETH/SOL/BASE/Zora)."
+                ]
+            },
+            { 
+                phase: "PHASE 6", 
+                version: "Onchain Operating System (v3.0)", 
+                goal: "SpawnEngine becomes the layer where creators launch new ecosystems using AI.", 
+                icon: "server", 
+                isCurrent: false, 
+                features: [
+                    "AI Contract Factory: Natural language smart contract generation & deployment.",
+                    "Creators can deploy token, pack, quest layer, automation rules from a single interface.",
+                    "Full AI assistance from Gemini / Venice AI / GPT / onchain data models."
+                ]
+            }
+        ];
+
+
+        // Helper functions for UI elements
+        function renderStatCard(title, value, unit, colorClass = 'text-white') {
+            return `
+                <div class="stat-card-compact">
+                    <p class="title">${title}</p>
+                    <p class="value ${colorClass}">
+                        ${value} ${unit ? `<span class="unit">${unit}</span>` : ''}
+                    </p>
+                </div>
+            `;
+        }
+        
+        // --- View Rendering (Translated to English) ---
+
+        function renderHomeView() {
+            return `
+                <div class="lg:grid lg:grid-cols-3 lg:gap-6">
+                    <!-- Column 1: Main Stats (Full width on mobile) -->
+                    <div class="lg:col-span-2">
+                        <!-- Header -->
+                        <div class="mb-4">
+                            <h1 class="text-3xl font-extrabold text-white leading-tight">SpawnEngine: Onchain OS Hub</h1>
+                            <p class="text-sm text-gray-400 mt-0.5">Unified multi-chain mesh for Base, Farcaster & creator ecosystems. V0.4.</p>
+                        </div>
+                        
+                        <!-- MAIN GRID WITH MAXIMUM DENSITY -->
+                        <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-700/50 mb-6 shadow-inner shadow-black/30">
+                            
+                            <!-- FIRST ROW (XP/TOKEN) - Large focus -->
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div class="bg-gray-800/80 p-3 rounded-lg border border-purple-500/50 text-center">
+                                    <p class="text-[0.6rem] font-medium text-gray-400 uppercase tracking-widest leading-tight">XP BALANCE</p>
+                                    <p class="text-3xl font-extrabold text-teal-400 mt-1 leading-none">
+                                        ${mockStats.xpBalance.toLocaleString()} <span class="text-base font-semibold opacity-70">XP</span>
+                                    </p>
+                                </div>
+                                <div class="bg-gray-800/80 p-3 rounded-lg border border-pink-500/50 text-center">
+                                    <p class="text-[0.6rem] font-medium text-gray-400 uppercase tracking-widest leading-tight">SPAWN TOKEN</p>
+                                    <p class="text-3xl font-extrabold text-pink-400 mt-1 leading-none">
+                                        ${mockStats.spawnToken} <span class="text-base font-semibold opacity-70">SPN</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- SECOND ROW (Compact System Stats) - 4 cards in a row on mobile -->
+                            <div class="grid grid-cols-4 gap-2 mb-4">
+                                ${renderStatCard("BRIDGED", mockStats.bridgeAssets, "Assets", "text-purple-400")}
+                                ${renderStatCard("LATENCY", mockStats.latency, "", "text-yellow-400")}
+                                ${renderStatCard("TX PENDING", mockStats.txPending, "tx", "text-pink-400")}
+                                ${renderStatCard("GAS (BASE)", mockStats.gasEst, "", "text-gray-300")}
+                            </div>
+                            
+                            <!-- THIRD ROW (Status/Link) - 2 large buttons/cards -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-gray-800/70 p-3 rounded-lg flex flex-col justify-center items-center text-center border border-teal-500/50">
+                                    <p class="text-[0.65rem] font-medium text-gray-400 uppercase tracking-widest leading-tight">MULTI-CHAIN MESH</p>
+                                    <p class="text-base font-extrabold text-teal-400 mt-1 leading-tight flex items-center">
+                                        <span data-lucide="check-circle" class="w-4 h-4 mr-1"></span> ${mockStats.meshStatus}
+                                    </p>
+                                </div>
+                                <button class="bg-gray-800/70 p-3 rounded-lg flex flex-col justify-center items-center text-center border border-purple-500/50 hover:bg-purple-900/50 transition duration-200">
+                                     <p class="text-[0.65rem] font-medium text-gray-400 uppercase tracking-widest leading-tight">WALLET MESH</p>
+                                    <p class="text-base font-extrabold text-purple-400 mt-1 leading-tight flex items-center">
+                                        ${mockStats.activeWallets} <span class="text-xs font-semibold ml-1 opacity-70">active</span>
+                                    </p>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Daily Ritual / Quests (1/3 width on desktop, stacked on mobile) -->
+                    <div class="lg:col-span-1">
+                        <!-- Daily Ritual / Streak - More compact and line-based -->
+                        <div class="p-4 bg-gray-900/60 rounded-xl mb-6 border border-gray-700/50 flex flex-col items-center">
+                            <h3 class="text-lg font-bold text-white mb-3">Daily Ritual</h3>
+                            <div class="w-16 h-16 rounded-full bg-gray-800 border-4 border-teal-500/70 flex items-center justify-center relative shadow-xl shadow-teal-500/30">
+                                <span class="text-3xl font-extrabold text-white">${mockStats.dailyStreak}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-3 leading-tight text-center">Maintain your streak (Rewards activity across <span class="text-teal-400">ALL</span> apps)</p>
+                            <button class="w-full py-2 mt-4 bg-teal-600/80 text-white font-bold rounded-lg shadow-md shadow-teal-500/50 hover:bg-teal-500 transition duration-200 text-sm">
+                                Claim XP
+                            </button>
+                        </div>
+                        
+                         <!-- Active Quests Summary -->
+                        <div class="p-4 bg-gray-900/60 rounded-xl mb-6 border border-gray-700/50">
+                            <h3 class="text-lg font-bold text-white mb-3 flex items-center">
+                                <span data-lucide="sword" class="w-4 h-4 mr-2 text-pink-400"></span>
+                                Quests Summary
+                            </h3>
+                            <div class="space-y-2 text-xs">
+                                ${quests.map(q => `
+                                    <div class="flex justify-between items-center text-gray-300">
+                                        <p class="truncate">${q.text}</p>
+                                        <span class="font-bold ${q.color}">+${q.xp} XP</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button onclick="setActiveTab('Quests')" class="w-full text-center text-xs text-pink-400 mt-3 hover:underline">View All Quests</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Streams (Activity Log) - Full width bottom -->
+                <div class="mt-4 p-4 bg-gray-900/60 rounded-xl border border-gray-700/50">
+                    <h3 class="text-lg font-bold text-white mb-3 flex items-center">
+                        <span data-lucide="activity" class="w-4 h-4 mr-2 text-pink-400"></span>
+                        Real-Time Feed: Unified Data Mesh
+                    </h3>
+                    <div class="text-gray-400 text-xs divide-y divide-gray-700">
+                        <p class="py-2"><span class="text-teal-400 font-semibold">12:51:</span> Buy: +10 CREATOR_COIN on VibeMarket (Base).</p>
+                        <p class="py-2"><span class="text-teal-400 font-semibold">12:45:</span> BRIDGE: 0.1 ETH to SOLANA complete.</p>
+                        <p class="py-2"><span class="text-teal-400 font-semibold">12:34:</span> Mint: NFT in Zora (Pack trigger).</p>
+                        <p class="py-2"><span class="text-teal-400 font-semibold">12:30:</span> Quest: Farcaster post (+25 XP).</p>
+                    </div>
+                </div>
+
+            `;
+        }
+
+        function renderQuestsView() {
+            return `
+                <div class="max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold text-white mb-6">Quests / Bounties Layer</h2>
+                    <div class="flex space-x-2 p-1 bg-gray-900/50 rounded-xl mb-6 shadow-inner shadow-black/30 w-full">
+                        <button class="sub-nav-btn flex-1 py-1.5 px-3 text-sm font-semibold rounded-lg transition-all duration-200 bg-pink-600 text-white shadow-md shadow-pink-500/50">Creator Quests</button>
+                        <button class="sub-nav-btn flex-1 py-1.5 px-3 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800/50">Spawn Bot Automation</button>
+                        <button class="sub-nav-btn flex-1 py-1.5 px-3 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800/50">XP Leaderboard</button>
+                    </div>
+                    
+                    <div id="quests-content">
+                        <div class="bg-gray-800/50 p-4 rounded-xl mb-6 border border-gray-700/50">
+                            <h3 class="text-xl font-semibold text-white mb-3">Active Quests (Creator)</h3>
+                            <p class="text-sm text-gray-400 mb-4">Tools to add new tasks. Rewarded with XP boosters.</p>
+                            <div class="space-y-3 divide-y divide-gray-700">
+                                ${quests.map(q => `
+                                    <div class="pt-3 flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div>
+                                                <p class="text-sm font-semibold text-white">${q.text}</p>
+                                                <p class="text-xs text-gray-500 mt-0.5">${q.status === 'Complete' ? 'Awaiting Claim' : 'In-Progress Mesh Tracking'}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-bold ${q.color}">+${q.xp} XP</span>
+                                            <span class="text-xs font-medium px-2 py-0.5 rounded-full ${q.status === 'Complete' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${q.status}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <button class="w-full py-3 text-white font-bold rounded-xl btn-gradient shadow-lg shadow-pink-500/50 hover:opacity-90 transition duration-200">
+                            Claim All Available Rewards
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderLootView() {
+             return `
+                <div class="max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold text-white mb-6">Pack Protocol (v1.0)</h2>
+                    <div class="flex space-x-2 p-1 bg-gray-900/50 rounded-xl mb-6 shadow-inner shadow-black/30 w-full">
+                        <button class="sub-nav-btn flex-1 py-1.5 px-3 text-sm font-semibold rounded-lg transition-all duration-200 bg-pink-600 text-white shadow-md shadow-pink-500/50">My Packs</button>
+                        <button class="sub-nav-btn flex-1 py-1.5 px-3 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800/50">Pull Lab (Entropy)</button>
+                        <button class="sub-nav-btn flex-1 py-1.5 px-3 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800/50">TokenPackSeries</button>
+                    </div>
+
+                    <!-- Main Pack Opening Area -->
+                    <div class="bg-gray-800/50 p-6 rounded-xl mb-6 border border-gray-700/50">
+                        <h3 class="text-xl font-semibold text-white mb-3 flex items-center">
+                            <span data-lucide="gem" class="w-5 h-5 mr-2 text-pink-400"></span>
+                            Token Packs (Unopened)
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">
+                            Open packs docked to the mesh. Packs feed XP, fragments, and streaks to your path. Integrated via <span class="text-teal-400">PackFactory.sol</span>
+                        </p>
+                        <div class="flex justify-between items-center mb-4 p-3 bg-gray-900/70 rounded-lg">
+                            <span class="bg-green-500/20 text-green-400 text-sm font-medium px-2 py-1 rounded-full">3 Packs to Open</span>
+                            <button class="px-4 py-1 text-sm text-purple-300 hover:text-purple-400 transition flex items-center space-x-1">
+                                <span data-lucide="zap" class="w-4 h-4"></span> <span>Pull Lab Test</span>
+                            </button>
+                        </div>
+                        <button class="w-full py-3 mt-4 bg-pink-500/90 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-pink-500/50 hover:opacity-90 transition duration-200">
+                            Open Pack (x3)
+                        </button>
+                    </div>
+                    
+                    <!-- Fragment & Burn Logic -->
+                    <div class="bg-gray-800/50 p-6 rounded-xl border border-gray-700/50">
+                        <h3 class="text-xl font-semibold text-white mb-3 flex items-center">
+                            <span data-lucide="component" class="w-5 h-5 mr-2 text-purple-400"></span>
+                            Pack Fusion & Burn
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">
+                            Use <span class="text-teal-400">UtilityPackRouter.sol</span> to safely burn fragments and upgrade to rare Relics.
+                        </p>
+                        <ul class="text-xs space-y-2 text-gray-300">
+                            <li class="flex items-center"><span data-lucide="chevrons-right" class="w-3 h-3 mr-2 text-pink-400"></span>Fragments → Fuse → Shards</li>
+                            <li class="flex items-center"><span data-lucide="chevrons-right" class="w-3 h-3 mr-2 text-pink-400"></span>Shards → Gamble → Relics</li>
+                            <li class="flex items-center"><span data-lucide="chevrons-right" class="w-3 h-3 mr-2 text-pink-400"></span>Relics → Unlock → Mythics (No Mythic Burn Ever)</li>
+                        </ul>
+                        <button class="w-full py-2 mt-4 bg-gray-700/50 text-white font-semibold text-sm rounded-lg hover:bg-gray-600 transition duration-200">
+                            Manage Fragments
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBotView() {
+            return `
+                <div class="max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold text-white mb-6">The Spawn Bot (v1.5)</h2>
+                    <div class="p-6 bg-gray-800/50 rounded-xl mb-6 shadow-inner shadow-black/20 border border-gray-700/50">
+                        <h3 class="text-xl font-semibold text-white mb-2 flex items-center">
+                            <span data-lucide="cpu" class="w-5 h-5 mr-2 text-teal-400"></span>
+                            Intelligent Automation Rules
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">
+                            Your onchain assistant. Configure autonomous transactions based on Mesh data.
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-gray-900/70 rounded-lg border-l-4 border-pink-500/50">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">Auto-Open Packs (Entropy)</p>
+                                    <p class="text-xs text-gray-500">Open packs at optimal "roll luck".</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                                </label>
+                            </div>
+                            
+                            <div class="flex justify-between items-center p-3 bg-gray-900/70 rounded-lg border-l-4 border-teal-500/50">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">Auto-Stake Coins (Streak)</p>
+                                    <p class="text-xs text-gray-500">Secure coins when Daily Streak is active.</p>
+                                </div>
+                                 <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="flex justify-between items-center p-3 bg-gray-900/70 rounded-lg border-l-4 border-purple-500/50">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">Auto-Bridge Assets (Multi-Chain)</p>
+                                    <p class="text-xs text-gray-500">Bridge assets if cheapest route detected (e.g., ETH to SOL).</p>
+                                </div>
+                                 <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full py-3 text-white font-bold rounded-xl btn-gradient shadow-lg shadow-pink-500/50 hover:opacity-90 transition duration-200">
+                        Configure Advanced Bot Parameters
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderFactoryView(isGenerating = false, output) {
+             const baseOutput = `
+                // Status: Ready to Deploy
+                // Contract Type: ERC20
+                // Estimated Gas: 0.0003 ETH (High)
+                // AI Model Cost: 1.5 SPN Tokens
+                // Audit Score: 98% (Security verified by Spawn Audit Bot)
+            `;
+            
+             return `
+                <div class="max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold text-white mb-6">AI Contract Factory (v0.1)</h2>
+                    
+                    <!-- Main AI Input Area -->
+                    <div class="p-6 bg-gray-800/50 rounded-xl mb-6 shadow-inner shadow-black/20 border border-gray-700/50">
+                        <h3 class="text-xl font-semibold text-white mb-2 flex items-center">
+                            <span data-lucide="sigma" class="w-5 h-5 mr-2 text-teal-400"></span>
+                            Natural Language Contract Deployment
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">
+                            Use AI (via Gemini API) to generate, audit, and deploy smart contracts on your chosen chain.
+                        </p>
+                        
+                        <label for="ai-contract-prompt" class="block text-sm font-medium text-gray-400 mb-1">Enter Contract Details:</label>
+                        <textarea id="ai-contract-prompt" class="ai-input" rows="4" placeholder="e.g., 'Make a standard ERC-20 token on Base called 'MESH Token' with a max supply of 1 billion, and make the contract burnable.'"></textarea>
+
+                        <div class="flex items-center space-x-3 mt-4">
+                            <span class="text-xs font-semibold text-gray-400">TARGET CHAIN:</span>
+                            <span class="text-sm font-bold text-teal-400 bg-gray-900/50 px-2 py-0.5 rounded-full border border-teal-500/30">Base (L2)</span>
+                            <span class="text-xs text-gray-500">(Can be changed to Solana, ETH, etc.)</span>
+                        </div>
+
+                        <button id="generate-contract-btn" class="w-full py-3 mt-6 text-white font-bold rounded-xl btn-ai-gradient shadow-lg shadow-teal-500/50 hover:opacity-90 transition duration-200" ${isGenerating ? 'disabled' : ''}>
+                            <span class="flex items-center justify-center">
+                                ${isGenerating ? '<div class="loader mr-2"></div>' : `<span data-lucide="zap" class="w-5 h-5 mr-2"></span>`}
+                                ${isGenerating ? 'GENERATING & AUDITING...' : 'Generate & Audit Contract'}
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <!-- Mock Output & Cost Estimate -->
+                    <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700/50">
+                        <h3 class="text-xl font-semibold text-white mb-3 flex items-center">
+                            <span data-lucide="terminal" class="w-5 h-5 mr-2 text-pink-400"></span>
+                            Deployment Console
+                        </h3>
+                        
+                        <div id="factory-output" class="text-xs text-gray-400 bg-gray-900 p-3 rounded-lg font-mono mb-4 overflow-x-auto whitespace-pre">
+                            ${output || baseOutput}
+                        </div>
+                        
+                        <button class="w-full py-2 bg-purple-600/80 text-white font-semibold text-sm rounded-lg hover:bg-purple-500 transition duration-200" ${isGenerating ? 'disabled' : ''}>
+                            Deploy Contract on Base
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        function renderMeshView() {
+            const dockedApps = [
+                { name: 'Zora', streams: 'NFT_MINT, PACK_OPEN', color: 'bg-indigo-500' },
+                { name: 'OpenSea', streams: 'ASSET_PRICE, TRADES_L2', color: 'bg-blue-600' },
+                { name: 'Farcaster', streams: 'XP_GAIN, STREAK_TICK', color: 'bg-sky-500' },
+                { name: 'Solana Bridge', streams: 'TOKEN_SWAP, TX_AGGREGATION', color: 'bg-purple-600' },
+            ];
+
+            return `
+                <div class="max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold text-white mb-6">Mesh Explorer (v2.0)</h2>
+                    
+                    <div class="p-6 bg-gray-800/50 rounded-xl mb-6 shadow-inner shadow-black/20 border border-gray-700/50">
+                        <h3 class="text-xl font-semibold text-white mb-2 flex items-center">
+                            <span data-lucide="network" class="w-5 h-5 mr-2 text-teal-400"></span>
+                            Unified Asset & Bridge Status
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">
+                            Monitor asset flow across all connected chains (Base, ETH, Solana, Zora).
+                        </p>
+                        <div class="h-48 bg-gray-900/70 rounded-lg border border-gray-700 flex items-center justify-center text-gray-500 text-sm">
+                            [Bubble Map V2 Visualization Placeholder - Interactive cross-chain asset flow]
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700/50">
+                        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                            <span data-lucide="git-branch" class="w-5 h-5 mr-2 text-pink-400"></span>
+                            Docked Ecosystem Streams
+                        </h3>
+                        <div class="space-y-3">
+                            ${dockedApps.map(app => `
+                                <div class="flex items-center space-x-4 p-3 bg-gray-900/50 rounded-lg border-l-4 border-teal-500/50 hover:border-l-4 hover:border-pink-500/50 transition duration-200">
+                                    <div class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-white text-lg ${app.color}">
+                                        ${app.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-white">${app.name}</p>
+                                        <p class="text-xs text-gray-400">Streams: ${app.streams}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="w-full py-2 mt-4 bg-gray-700/50 text-white font-semibold text-sm rounded-lg hover:bg-gray-600 transition duration-200">
+                            View all 24 active streams
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderRoadmapView() {
+            return `
+                <div class="max-w-3xl mx-auto">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-bold text-white">SpawnEngine: Roadmap 2025</h2>
+                        <p class="text-sm text-gray-400 mt-1">Modular onchain mesh for creators. Built for Base. Designed for Farcaster.</p>
+                    </div>
+
+                    <div class="space-y-12">
+                        ${roadmapPhases.map(phase => `
+                            <div class="roadmap-phase p-4 rounded-lg bg-gray-900/30 shadow-lg ${phase.isCurrent ? 'current shadow-teal-500/20' : 'shadow-purple-500/10'}">
+                                <p class="text-xs font-bold uppercase tracking-widest ${phase.isCurrent ? 'text-teal-400' : 'text-pink-400'}">${phase.phase}</p>
+                                <h3 class="text-xl font-extrabold text-white mt-0.5 mb-2">${phase.version}</h3>
+                                <p class="text-base font-semibold ${phase.isCurrent ? 'text-teal-200' : 'text-gray-300'} mb-3">${phase.goal}</p>
+                                
+                                <div class="p-3 bg-gray-900/50 rounded-lg border border-gray-700/50">
+                                    <p class="text-xs font-bold uppercase text-gray-400 mb-2">Key Features</p>
+                                    <ul class="text-sm text-gray-400 space-y-1">
+                                        ${phase.features.map(f => `
+                                            <li class="flex items-start">
+                                                <span data-lucide="chevron-right" class="w-4 h-4 mr-2 mt-0.5 ${phase.isCurrent ? 'text-teal-400' : 'text-pink-400'} flex-shrink-0"></span>
+                                                <span>${f}</span>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="mt-8 p-4 bg-gray-900/50 rounded-xl border border-gray-700/50 text-center">
+                        <p class="text-sm text-gray-400">SpawnEngine delivers all four: Creators want plug-ins, Users want streaks, Base wants mobile UX, Farcaster wants frames.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Main Logic ---
+
+        const contentArea = document.getElementById('content-area');
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const modalMenu = document.getElementById('modal-menu');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const headerMenuBtn = document.getElementById('connect-wallet-btn'); // Using Connect Wallet/Menu Button
+        const modalNavButtons = document.querySelectorAll('.modal-nav-btn');
+        
+        // State for Factory View
+        let isGenerating = false;
+        let factoryOutput = null;
+
+        // Function to simulate AI generation (replaces API call for this demo)
+        async function simulateGeneration() {
+            if (isGenerating) return;
+
+            isGenerating = true;
+            setActiveTab('Factory'); // Re-render to show loading state
+            
+            const prompt = document.getElementById('ai-contract-prompt').value || "No prompt entered.";
+
+            // Simulated waiting time
+            await new Promise(resolve => setTimeout(resolve, 2500));
+
+            // Generate mock output
+            const mockContractOutput = `
+// Contract: TokenFactory v1.0
+// Input Prompt: ${prompt.substring(0, 50)}...
+// Date: ${new Date().toISOString()}
+// Status: COMPILATION SUCCESS (0 warnings)
+// Contract Name: MeshToken
+// Symbol: MSH
+// Supply: 1,000,000,000
+// Burnable: True
+// Deployer Fee: 0.01%
+// Audit Score: 99.5% (High Security)
+// Estimated Cost: 0.0003 ETH + 3.0 SPN Tokens
+`;
+            factoryOutput = mockContractOutput;
+            isGenerating = false;
+            setActiveTab('Factory'); // Re-render to show results
+            
+            showCustomMessage('Contract generation and security audit complete! Ready for deployment on Base.', 'Contract Ready');
+
+            // Re-attach event listener after re-render
+            document.getElementById('generate-contract-btn').addEventListener('click', simulateGeneration);
+        }
+
+
+        // Helper function for custom message modal
+        function showCustomMessage(message, title = "Notification") { // Changed title to English
+            const msgBox = document.createElement('div');
+            msgBox.className = 'fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm';
+            msgBox.innerHTML = `
+                <div class="bg-[#1a1331] p-6 rounded-xl max-w-sm w-full shadow-2xl shadow-purple-500/50 border border-gray-700/50">
+                    <h3 class="text-xl font-bold mb-3 text-white">${title}</h3>
+                    <p class="text-gray-300 mb-6 whitespace-pre-wrap">${message}</p>
+                    <button onclick="this.parentNode.parentNode.remove()" class="w-full py-2 bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-500 transition">Close</button> 
+                </div>
+            `;
+            document.body.appendChild(msgBox);
+        }
+
+        // Function to switch view
+        function setActiveTab(tab) {
+            // Update bottom nav buttons
+            navButtons.forEach(btn => {
+                const isActive = btn.dataset.tab === tab;
+                if (isActive) {
+                    btn.classList.add('active');
+                    btn.style.backgroundColor = 'var(--color-accent-pink)'; 
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.backgroundColor = '';
+                }
+                btn.style.color = isActive ? 'white' : 'var(--color-text-dim)';
+            });
+
+            // Load content
+            switch (tab) {
+                case 'Home':
+                    contentArea.innerHTML = renderHomeView();
+                    break;
+                case 'Loot':
+                    contentArea.innerHTML = renderLootView();
+                    break;
+                case 'Quests':
+                    contentArea.innerHTML = renderQuestsView();
+                    break;
+                case 'Bot':
+                    contentArea.innerHTML = renderBotView();
+                    break;
+                case 'Factory':
+                    contentArea.innerHTML = renderFactoryView(isGenerating, factoryOutput);
+                     // Attach event listener specifically for the factory button
+                    document.getElementById('generate-contract-btn')?.addEventListener('click', simulateGeneration);
+                    break;
+                case 'Mesh':
+                    contentArea.innerHTML = renderMeshView();
+                    break;
+                case 'Roadmap':
+                    contentArea.innerHTML = renderRoadmapView();
+                    break;
+                default:
+                    contentArea.innerHTML = renderHomeView();
+            }
+            // Reload lucide icons
+            lucide.createIcons();
+            contentArea.scrollTop = 0; // Scroll to top on view switch
+        }
+
+        // Event listener for nav buttons
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setActiveTab(btn.dataset.tab);
+            });
+        });
+        
+        // Event listener for modal nav buttons
+        modalNavButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeModal();
+                setActiveTab(btn.dataset.tab);
+            });
+        });
+
+
+        // Function to open the modal (Fly-out Menu)
+        function openModal() {
+            modalMenu.classList.remove('hidden');
+            // Use timeout to trigger transition
+            setTimeout(() => {
+                modalMenu.classList.remove('opacity-0');
+            }, 10);
+            headerMenuBtn.removeEventListener('click', openModal);
+            headerMenuBtn.addEventListener('click', closeModal);
+            headerMenuBtn.innerHTML = 'Close Menu'; // Change button text
+            headerMenuBtn.classList.remove('btn-gradient');
+            headerMenuBtn.classList.add('bg-gray-700');
+        }
+
+        // Function to close the modal (Fly-out Menu)
+        function closeModal() {
+            modalMenu.classList.add('opacity-0');
+            // Wait for transition before adding 'hidden'
+            setTimeout(() => {
+                modalMenu.classList.add('hidden');
+            }, 300);
+            headerMenuBtn.removeEventListener('click', closeModal);
+            headerMenuBtn.addEventListener('click', openModal);
+            headerMenuBtn.innerHTML = 'Connect Wallet'; // Revert button text
+            headerMenuBtn.classList.add('btn-gradient');
+            headerMenuBtn.classList.remove('bg-gray-700');
+        }
+
+        // Add Event Listeners for the modal
+        headerMenuBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveTab('Home');
+        });
+    </script>
+</body>
+</html>
+
